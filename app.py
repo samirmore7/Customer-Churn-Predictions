@@ -22,41 +22,25 @@ try:
             with open(MODEL_PATH, "r") as f:
                 content = f.read(200)
             if "version https://git-lfs" in content:
-                LOAD_ERROR = (
-                    f"GIT LFS POINTER DETECTED: File size is only {file_size} bytes. "
-                    f"Re-upload the real binary file via GitHub web UI."
-                )
+                LOAD_ERROR = f"GIT LFS POINTER DETECTED: File size is only {file_size} bytes. Re-upload real binary file."
         
         if not LOAD_ERROR:
             with open(MODEL_PATH, "rb") as f:
                 MODEL = pickle.load(f)
     else:
-        LOAD_ERROR = f"Model file not found at path '{MODEL_PATH}'. Files in directory: {os.listdir(BASE_DIR)}"
+        LOAD_ERROR = f"File not found at '{MODEL_PATH}'."
 except Exception as e:
     LOAD_ERROR = f"PICKLE UNPICKLING FAILED: {str(e)}\n\nTRACEBACK:\n{traceback.format_exc()}"
 
 # ==============================================================================
 # CATEGORICAL FEATURE ENCODING MAPPINGS
 # ==============================================================================
-GENDER_MAP = {
-    "Male": 0,
-    "Female": 1
-}
-
-SUBSCRIPTION_MAP = {
-    "Basic": 0,
-    "Standard": 1,
-    "Premium": 2
-}
-
-CONTRACT_MAP = {
-    "Monthly": 0,
-    "Quarterly": 1,
-    "Annual": 2
-}
+GENDER_MAP = {"Male": 0, "Female": 1}
+SUBSCRIPTION_MAP = {"Basic": 0, "Standard": 1, "Premium": 2}
+CONTRACT_MAP = {"Monthly": 0, "Quarterly": 1, "Annual": 2}
 
 # ==============================================================================
-# FULL UNCOMPRESSED PREMIUM HTML / CSS / JS TEMPLATE
+# FAIL-SAFE HTML / CSS / JS TEMPLATE (ZERO EXTERNAL JS DEPENDENCIES)
 # ==============================================================================
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -64,51 +48,21 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Churn Analytics Studio - Enterprise Edition</title>
+    <title>AI Churn Analytics Studio</title>
     
-    <!-- Modern Google Fonts Typography Stack -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
-    
-    <!-- FontAwesome Icon Suite -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Chart.js Visualization Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 
     <style>
-        /* ==========================================================================
-           ROOT DESIGN VARIABLES & THEME DEFINITIONS
-           ========================================================================== */
         :root {
             --bg-primary: #0b0f19;
             --bg-secondary: #111827;
-            --bg-tertiary: #1f2937;
             --bg-glass: rgba(17, 24, 39, 0.85);
-            --bg-glass-card: rgba(31, 41, 55, 0.45);
-            --bg-glass-input: rgba(0, 0, 0, 0.25);
-            --border-color: rgba(255, 255, 255, 0.08);
-            --border-glow: rgba(99, 102, 241, 0.3);
-            --accent-glow: #6366f1;
-            --accent-secondary: #a855f7;
-            --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-            --accent-gradient-hover: linear-gradient(135deg, #4f46e5 0%, #9333ea 100%);
-            --text-main: #f9fafb;
-            --text-muted: #9ca3af;
-            --text-subtle: #6b7280;
-            --card-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
-            --glass-blur: blur(16px);
-            --transition-speed: 0.3s;
-        }
-
-        /* --- THEME 1: OBSIDIAN CYBER --- */
-        [data-theme="obsidian"] {
-            --bg-primary: #0b0f19;
-            --bg-secondary: #111827;
-            --bg-glass: rgba(17, 24, 39, 0.85);
-            --bg-glass-card: rgba(31, 41, 55, 0.45);
-            --border-color: rgba(255, 255, 255, 0.08);
+            --bg-glass-card: rgba(31, 41, 55, 0.55);
+            --bg-glass-input: rgba(0, 0, 0, 0.3);
+            --border-color: rgba(255, 255, 255, 0.1);
             --accent-glow: #6366f1;
             --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
             --text-main: #f9fafb;
@@ -116,584 +70,120 @@ HTML_TEMPLATE = """
             --card-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
         }
 
-        /* --- THEME 2: AMETHYST GLASS --- */
-        [data-theme="amethyst"] {
-            --bg-primary: #0d0914;
-            --bg-secondary: #191224;
-            --bg-glass: rgba(25, 18, 36, 0.85);
-            --bg-glass-card: rgba(42, 31, 61, 0.45);
-            --border-color: rgba(216, 180, 254, 0.12);
-            --accent-glow: #c084fc;
-            --accent-gradient: linear-gradient(135deg, #c084fc 0%, #e879f9 100%);
-            --text-main: #faf5ff;
-            --text-muted: #c0a9d4;
-            --card-shadow: 0 20px 40px rgba(18, 5, 30, 0.55);
-        }
+        [data-theme="amethyst"] { --bg-primary: #0d0914; --bg-glass: rgba(25, 18, 36, 0.85); --bg-glass-card: rgba(42, 31, 61, 0.55); --border-color: rgba(216, 180, 254, 0.15); --accent-glow: #c084fc; --accent-gradient: linear-gradient(135deg, #c084fc 0%, #e879f9 100%); --text-main: #faf5ff; --text-muted: #c0a9d4; }
+        [data-theme="emerald"] { --bg-primary: #061412; --bg-glass: rgba(11, 36, 32, 0.85); --bg-glass-card: rgba(18, 56, 50, 0.55); --border-color: rgba(52, 211, 153, 0.15); --accent-glow: #10b981; --accent-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%); --text-main: #ecfdf5; --text-muted: #86efac; }
+        [data-theme="gold"] { --bg-primary: #120f0a; --bg-glass: rgba(33, 28, 19, 0.85); --bg-glass-card: rgba(51, 43, 29, 0.55); --border-color: rgba(251, 191, 36, 0.18); --accent-glow: #f59e0b; --accent-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); --text-main: #fffbeb; --text-muted: #fcd34d; }
+        [data-theme="rosegold"] { --bg-primary: #170a0f; --bg-glass: rgba(39, 18, 26, 0.85); --bg-glass-card: rgba(58, 27, 39, 0.55); --border-color: rgba(251, 113, 133, 0.18); --accent-glow: #fb7185; --accent-gradient: linear-gradient(135deg, #fb7185 0%, #e11d48 100%); --text-main: #fff1f2; --text-muted: #fecdd3; }
+        [data-theme="cyan"] { --bg-primary: #04131a; --bg-glass: rgba(8, 35, 47, 0.85); --bg-glass-card: rgba(14, 55, 73, 0.55); --border-color: rgba(6, 182, 212, 0.18); --accent-glow: #06b6d4; --accent-gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%); --text-main: #ecfeff; --text-muted: #a5f3fc; }
+        [data-theme="crimson"] { --bg-primary: #1a0909; --bg-glass: rgba(44, 15, 15, 0.85); --bg-glass-card: rgba(66, 23, 23, 0.55); --border-color: rgba(248, 113, 113, 0.18); --accent-glow: #ef4444; --accent-gradient: linear-gradient(135deg, #f97316 0%, #ef4444 100%); --text-main: #fef2f2; --text-muted: #fca5a5; }
+        [data-theme="platinum"] { --bg-primary: #f8fafc; --bg-glass: rgba(255, 255, 255, 0.95); --bg-glass-card: rgba(255, 255, 255, 0.9); --border-color: rgba(0, 0, 0, 0.1); --accent-glow: #2563eb; --accent-gradient: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); --text-main: #0f172a; --text-muted: #64748b; }
 
-        /* --- THEME 3: EMERALD EXECUTIVE --- */
-        [data-theme="emerald"] {
-            --bg-primary: #061412;
-            --bg-secondary: #0b2420;
-            --bg-glass: rgba(11, 36, 32, 0.85);
-            --bg-glass-card: rgba(18, 56, 50, 0.45);
-            --border-color: rgba(52, 211, 153, 0.12);
-            --accent-glow: #10b981;
-            --accent-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            --text-main: #ecfdf5;
-            --text-muted: #86efac;
-            --card-shadow: 0 20px 40px rgba(2, 20, 15, 0.55);
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; transition: background-color 0.25s, border-color 0.25s, color 0.25s; }
+        body { background-color: var(--bg-primary); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
+        
+        header { padding: 1.1rem 2rem; display: flex; justify-content: space-between; align-items: center; background: var(--bg-glass); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(12px); }
+        .logo { display: flex; align-items: center; gap: 0.75rem; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 1.25rem; }
+        .logo-icon { width: 38px; height: 38px; border-radius: 10px; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; color: #fff; box-shadow: 0 0 15px var(--accent-glow); }
+        
+        .theme-selector { display: flex; align-items: center; gap: 0.4rem; background: var(--bg-glass-card); padding: 0.35rem 0.65rem; border-radius: 30px; border: 1px solid var(--border-color); }
+        .theme-btn { width: 20px; height: 20px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
+        .theme-btn.active { border-color: #fff; transform: scale(1.1); }
+        .theme-obsidian { background: #6366f1; } .theme-amethyst { background: #c084fc; } .theme-emerald { background: #10b981; } .theme-gold { background: #f59e0b; } .theme-rosegold { background: #fb7185; } .theme-cyan { background: #06b6d4; } .theme-crimson { background: #ef4444; } .theme-platinum { background: #64748b; }
 
-        /* --- THEME 4: MIDNIGHT GOLD --- */
-        [data-theme="gold"] {
-            --bg-primary: #120f0a;
-            --bg-secondary: #211c13;
-            --bg-glass: rgba(33, 28, 19, 0.85);
-            --bg-glass-card: rgba(51, 43, 29, 0.45);
-            --border-color: rgba(251, 191, 36, 0.15);
-            --accent-glow: #f59e0b;
-            --accent-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            --text-main: #fffbeb;
-            --text-muted: #fcd34d;
-            --card-shadow: 0 20px 40px rgba(20, 15, 5, 0.55);
-        }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; max-width: 1500px; margin: 1.5rem auto; padding: 0 1.5rem; width: 100%; }
+        .span-1 { grid-column: span 1; } .span-2 { grid-column: span 2; } .span-4 { grid-column: span 4; }
+        @media (max-width: 1024px) { .dashboard-grid { grid-template-columns: 1fr; } .span-1, .span-2, .span-4 { grid-column: span 1; } }
 
-        /* --- THEME 5: ROSE GOLD LUXE --- */
-        [data-theme="rosegold"] {
-            --bg-primary: #170a0f;
-            --bg-secondary: #27121a;
-            --bg-glass: rgba(39, 18, 26, 0.85);
-            --bg-glass-card: rgba(58, 27, 39, 0.45);
-            --border-color: rgba(251, 113, 133, 0.15);
-            --accent-glow: #fb7185;
-            --accent-gradient: linear-gradient(135deg, #fb7185 0%, #e11d48 100%);
-            --text-main: #fff1f2;
-            --text-muted: #fecdd3;
-            --card-shadow: 0 20px 40px rgba(25, 5, 12, 0.55);
-        }
+        .glass-card { background: var(--bg-glass-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 1.35rem 1.5rem; box-shadow: var(--card-shadow); position: relative; overflow: hidden; backdrop-filter: blur(12px); }
+        .glass-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--accent-gradient); }
 
-        /* --- THEME 6: ELECTRIC CYAN --- */
-        [data-theme="cyan"] {
-            --bg-primary: #04131a;
-            --bg-secondary: #08232f;
-            --bg-glass: rgba(8, 35, 47, 0.85);
-            --bg-glass-card: rgba(14, 55, 73, 0.45);
-            --border-color: rgba(6, 182, 212, 0.15);
-            --accent-glow: #06b6d4;
-            --accent-gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
-            --text-main: #ecfeff;
-            --text-muted: #a5f3fc;
-            --card-shadow: 0 20px 40px rgba(2, 25, 35, 0.55);
-        }
+        .section-label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; }
+        .subtext-label { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
 
-        /* --- THEME 7: SUNSET CRIMSON --- */
-        [data-theme="crimson"] {
-            --bg-primary: #1a0909;
-            --bg-secondary: #2c0f0f;
-            --bg-glass: rgba(44, 15, 15, 0.85);
-            --bg-glass-card: rgba(66, 23, 23, 0.45);
-            --border-color: rgba(248, 113, 113, 0.15);
-            --accent-glow: #ef4444;
-            --accent-gradient: linear-gradient(135deg, #f97316 0%, #ef4444 100%);
-            --text-main: #fef2f2;
-            --text-muted: #fca5a5;
-            --card-shadow: 0 20px 40px rgba(30, 5, 5, 0.55);
-        }
+        .kpi-card { display: flex; flex-direction: column; justify-content: space-between; min-height: 110px; }
+        .kpi-value { font-size: 2.1rem; font-weight: 800; margin: 0.2rem 0; color: var(--text-main); }
+        .kpi-subtext { font-size: 0.75rem; font-weight: 600; color: #34d399; display: flex; align-items: center; gap: 0.35rem; }
 
-        /* --- THEME 8: TITANIUM PLATINUM --- */
-        [data-theme="platinum"] {
-            --bg-primary: #f8fafc;
-            --bg-secondary: #ffffff;
-            --bg-glass: rgba(255, 255, 255, 0.9);
-            --bg-glass-card: rgba(255, 255, 255, 0.85);
-            --border-color: rgba(0, 0, 0, 0.08);
-            --accent-glow: #2563eb;
-            --accent-gradient: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-            --text-main: #0f172a;
-            --text-muted: #64748b;
-            --card-shadow: 0 20px 40px rgba(0, 0, 0, 0.06);
-        }
+        .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.9rem; margin-top: 0.5rem; }
+        @media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } }
+        .input-group { display: flex; flex-direction: column; gap: 0.3rem; }
+        .input-group label { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+        .input-control { background: var(--bg-glass-input); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.65rem 0.85rem; color: var(--text-main); font-size: 0.875rem; outline: none; }
+        .input-control:focus { border-color: var(--accent-glow); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
+        select.input-control option { background-color: #1f2937; color: #fff; }
 
-        /* ==========================================================================
-           GLOBAL RESET & BASE STYLES
-           ========================================================================== */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            transition: background-color var(--transition-speed) ease, 
-                        border-color var(--transition-speed) ease, 
-                        color var(--transition-speed) ease,
-                        box-shadow var(--transition-speed) ease;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
+        .btn-group { grid-column: span 2; display: flex; gap: 0.85rem; margin-top: 0.5rem; }
+        .btn-premium { flex: 2; background: var(--accent-gradient); color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.875rem; padding: 0.8rem 1.2rem; border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; box-shadow: 0 6px 18px rgba(99, 102, 241, 0.25); }
+        .btn-premium:hover { opacity: 0.95; transform: translateY(-1px); }
+        .btn-secondary { flex: 1; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.85rem; font-weight: 600; padding: 0.8rem; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.4rem; }
 
-        body {
-            background-color: var(--bg-primary);
-            color: var(--text-main);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow-x: hidden;
-            background-image: 
-                radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.06) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.06) 0%, transparent 40%);
-            background-attachment: fixed;
-        }
+        .result-box { text-align: center; padding: 1rem; background: rgba(0, 0, 0, 0.25); border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 1rem; }
+        .badge-status { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.35rem 0.9rem; border-radius: 20px; font-weight: 700; font-size: 0.875rem; }
+        .badge-pos { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+        .badge-neg { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
 
-        /* ==========================================================================
-           HEADER ARCHITECTURE
-           ========================================================================== */
-        header {
-            padding: 1.1rem 2.2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            backdrop-filter: var(--glass-blur);
-            -webkit-backdrop-filter: var(--glass-blur);
-            background: var(--bg-glass);
-            border-bottom: 1px solid var(--border-color);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
+        .chart-container { position: relative; height: 260px; width: 100%; display: flex; justify-content: center; align-items: center; }
+        canvas { max-width: 100%; max-height: 100%; }
 
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 0.85rem;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-weight: 800;
-            font-size: 1.35rem;
-            letter-spacing: -0.025em;
-            color: var(--text-main);
-        }
+        table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; font-size: 0.825rem; }
+        th, td { padding: 0.7rem 0.85rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+        th { color: var(--text-muted); font-weight: 700; text-transform: uppercase; font-size: 0.685rem; }
 
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
-            background: var(--accent-gradient);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #ffffff;
-            font-size: 1.15rem;
-            box-shadow: 0 0 20px var(--accent-glow);
-        }
-
-        .theme-selector {
-            display: flex;
-            align-items: center;
-            gap: 0.45rem;
-            background: var(--bg-glass-card);
-            padding: 0.4rem 0.75rem;
-            border-radius: 30px;
-            border: 1px solid var(--border-color);
-            backdrop-filter: var(--glass-blur);
-        }
-
-        .theme-btn {
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            border: 2px solid transparent;
-            cursor: pointer;
-            transition: transform 0.2s ease, border-color 0.2s ease;
-            position: relative;
-        }
-
-        .theme-btn:hover {
-            transform: scale(1.25);
-        }
-
-        .theme-btn.active {
-            border-color: #ffffff;
-            transform: scale(1.15);
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-        }
-
-        .theme-obsidian { background: #6366f1; }
-        .theme-amethyst { background: #c084fc; }
-        .theme-emerald { background: #10b981; }
-        .theme-gold { background: #f59e0b; }
-        .theme-rosegold { background: #fb7185; }
-        .theme-cyan { background: #06b6d4; }
-        .theme-crimson { background: #ef4444; }
-        .theme-platinum { background: #64748b; }
-
-        /* ==========================================================================
-           GRID SYSTEM & CARD LAYOUTS
-           ========================================================================== */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1.35rem;
-            max-width: 1550px;
-            margin: 1.75rem auto;
-            padding: 0 1.75rem;
-            width: 100%;
-        }
-
-        .span-1 { grid-column: span 1; }
-        .span-2 { grid-column: span 2; }
-        .span-3 { grid-column: span 3; }
-        .span-4 { grid-column: span 4; }
-
-        @media (max-width: 1024px) {
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-            }
-            .span-1, .span-2, .span-3, .span-4 {
-                grid-column: span 1;
-            }
-        }
-
-        .glass-card {
-            background: var(--bg-glass-card);
-            backdrop-filter: var(--glass-blur);
-            -webkit-backdrop-filter: var(--glass-blur);
-            border: 1px solid var(--border-color);
-            border-radius: 18px;
-            padding: 1.5rem 1.65rem;
-            box-shadow: var(--card-shadow);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .glass-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: var(--accent-gradient);
-            opacity: 0.7;
-        }
-
-        .section-label {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 1.025rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 0.55rem;
-            letter-spacing: -0.01em;
-            color: var(--text-main);
-        }
-
-        .subtext-label {
-            font-size: 0.725rem;
-            font-weight: 700;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.09em;
-        }
-
-        /* ==========================================================================
-           KPI DASHBOARD WIDGETS
-           ========================================================================== */
-        .kpi-card {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            min-height: 125px;
-        }
-
-        .kpi-value {
-            font-family: 'Inter', sans-serif;
-            font-size: 2.15rem;
-            font-weight: 800;
-            margin: 0.35rem 0;
-            color: var(--text-main);
-            letter-spacing: -0.03em;
-            line-height: 1.1;
-        }
-
-        .kpi-subtext {
-            font-size: 0.775rem;
-            font-weight: 600;
-            color: #34d399;
-            display: flex;
-            align-items: center;
-            gap: 0.35rem;
-        }
-
-        /* ==========================================================================
-           FORM INPUT CONTROLS & SELECTION
-           ========================================================================== */
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1rem;
-            margin-top: 0.5rem;
-        }
-
-        @media (max-width: 640px) {
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.35rem;
-        }
-
-        .input-group label {
-            font-size: 0.715rem;
-            font-weight: 700;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-        }
-
-        .input-control {
-            background: var(--bg-glass-input);
-            border: 1px solid var(--border-color);
-            border-radius: 9px;
-            padding: 0.65rem 0.85rem;
-            color: var(--text-main);
-            font-size: 0.885rem;
-            font-weight: 500;
-            outline: none;
-            transition: all 0.25s ease;
-        }
-
-        .input-control:focus {
-            border-color: var(--accent-glow);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
-            background: rgba(0, 0, 0, 0.38);
-        }
-
-        select.input-control option {
-            background-color: var(--bg-secondary);
-            color: var(--text-main);
-        }
-
-        /* ==========================================================================
-           BUTTONS & ACTION HANDLERS
-           ========================================================================== */
-        .btn-group {
-            grid-column: span 2;
-            display: flex;
-            gap: 0.9rem;
-            margin-top: 0.65rem;
-        }
-
-        @media (max-width: 640px) {
-            .btn-group {
-                grid-column: span 1;
-                flex-direction: column;
-            }
-        }
-
-        .btn-premium {
-            flex: 2;
-            background: var(--accent-gradient);
-            color: #ffffff;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-weight: 700;
-            font-size: 0.9rem;
-            letter-spacing: 0.01em;
-            padding: 0.8rem 1.25rem;
-            border: none;
-            border-radius: 11px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.55rem;
-            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.28);
-            transition: all 0.25s ease;
-        }
-
-        .btn-premium:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 26px rgba(99, 102, 241, 0.42);
-        }
-
-        .btn-secondary {
-            flex: 1;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--border-color);
-            color: var(--text-main);
-            font-size: 0.85rem;
-            font-weight: 600;
-            padding: 0.8rem;
-            border-radius: 11px;
-            cursor: pointer;
-            transition: all 0.25s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.45rem;
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.09);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-
-        /* ==========================================================================
-           RESULTS BADGE & RADAR DISPLAY
-           ========================================================================== */
-        .result-box {
-            text-align: center;
-            padding: 1.15rem;
-            background: rgba(0, 0, 0, 0.22);
-            border-radius: 14px;
-            border: 1px solid var(--border-color);
-            margin-bottom: 1rem;
-        }
-
-        .badge-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.4rem 1rem;
-            border-radius: 30px;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-weight: 700;
-            font-size: 0.9rem;
-            margin-bottom: 0.35rem;
-            letter-spacing: 0.02em;
-        }
-
-        .badge-pos {
-            background: rgba(16, 185, 129, 0.16);
-            color: #34d399;
-            border: 1px solid rgba(16, 185, 129, 0.32);
-        }
-
-        .badge-neg {
-            background: rgba(239, 68, 68, 0.16);
-            color: #f87171;
-            border: 1px solid rgba(239, 68, 68, 0.32);
-        }
-
-        .chart-container {
-            position: relative;
-            height: 230px;
-            width: 100%;
-        }
-
-        /* ==========================================================================
-           HISTORY ANALYTICS TABLE
-           ========================================================================== */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 0.5rem;
-            font-size: 0.835rem;
-        }
-
-        th, td {
-            padding: 0.7rem 0.9rem;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        th {
-            color: var(--text-muted);
-            font-weight: 700;
-            text-transform: uppercase;
-            font-size: 0.685rem;
-            letter-spacing: 0.07em;
-        }
-
-        footer {
-            text-align: center;
-            padding: 1.5rem;
-            font-size: 0.825rem;
-            color: var(--text-muted);
-            border-top: 1px solid var(--border-color);
-            margin-top: auto;
-            backdrop-filter: var(--glass-blur);
-            background: var(--bg-glass);
-        }
-
-        .spinner {
-            display: none;
-            width: 17px;
-            height: 17px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: #ffffff;
-            animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        footer { text-align: center; padding: 1.25rem; font-size: 0.8rem; color: var(--text-muted); border-top: 1px solid var(--border-color); margin-top: auto; }
+        .spinner { display: none; width: 16px; height: 16px; border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: #fff; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-    <!-- ======================================================================
-         APPLICATION NAVIGATION HEADER
-         ====================================================================== -->
     <header>
         <div class="logo">
             <div class="logo-icon"><i class="fa-solid fa-chart-pie"></i></div>
-            <span>AI Churn <span style="font-weight: 400; opacity: 0.8;">Analytics Studio</span></span>
+            <span>AI Churn <span style="font-weight: 400; opacity: 0.75;">Analytics Studio</span></span>
         </div>
         
         <div class="theme-selector">
-            <span class="subtext-label" style="margin-right: 0.3rem;"><i class="fa-solid fa-palette"></i> Themes</span>
-            <button class="theme-btn theme-obsidian active" onclick="setTheme('obsidian')" title="Obsidian Cyber"></button>
-            <button class="theme-btn theme-amethyst" onclick="setTheme('amethyst')" title="Amethyst Glass"></button>
-            <button class="theme-btn theme-emerald" onclick="setTheme('emerald')" title="Emerald Executive"></button>
-            <button class="theme-btn theme-gold" onclick="setTheme('gold')" title="Midnight Gold"></button>
-            <button class="theme-btn theme-rosegold" onclick="setTheme('rosegold')" title="Rose Gold Luxe"></button>
-            <button class="theme-btn theme-cyan" onclick="setTheme('cyan')" title="Electric Cyan"></button>
-            <button class="theme-btn theme-crimson" onclick="setTheme('crimson')" title="Sunset Crimson"></button>
-            <button class="theme-btn theme-platinum" onclick="setTheme('platinum')" title="Titanium Platinum"></button>
+            <span class="subtext-label" style="margin-right: 0.2rem;"><i class="fa-solid fa-palette"></i> Themes</span>
+            <button class="theme-btn theme-obsidian active" onclick="setTheme('obsidian')" title="Obsidian"></button>
+            <button class="theme-btn theme-amethyst" onclick="setTheme('amethyst')" title="Amethyst"></button>
+            <button class="theme-btn theme-emerald" onclick="setTheme('emerald')" title="Emerald"></button>
+            <button class="theme-btn theme-gold" onclick="setTheme('gold')" title="Gold"></button>
+            <button class="theme-btn theme-rosegold" onclick="setTheme('rosegold')" title="Rose Gold"></button>
+            <button class="theme-btn theme-cyan" onclick="setTheme('cyan')" title="Cyan"></button>
+            <button class="theme-btn theme-crimson" onclick="setTheme('crimson')" title="Crimson"></button>
+            <button class="theme-btn theme-platinum" onclick="setTheme('platinum')" title="Platinum"></button>
         </div>
     </header>
 
-    <!-- ======================================================================
-         MAIN DASHBOARD LAYOUT GRID
-         ====================================================================== -->
     <div class="dashboard-grid">
-        
-        <!-- KPI CARD 1 -->
         <div class="glass-card kpi-card span-1">
             <div class="subtext-label">Total Evaluated</div>
             <div class="kpi-value" id="kpiTotal">1,248</div>
             <div class="kpi-subtext"><i class="fa-solid fa-arrow-up"></i> +14% this month</div>
         </div>
 
-        <!-- KPI CARD 2 -->
         <div class="glass-card kpi-card span-1">
             <div class="subtext-label">Positive Rate (Class 1)</div>
             <div class="kpi-value" id="kpiRate">68.4%</div>
             <div class="kpi-subtext" style="color: #60a5fa;"><i class="fa-solid fa-users"></i> Optimal distribution</div>
         </div>
 
-        <!-- KPI CARD 3 -->
         <div class="glass-card kpi-card span-1">
             <div class="subtext-label">Avg User Spend</div>
             <div class="kpi-value" id="kpiSpend">$850.50</div>
             <div class="kpi-subtext"><i class="fa-solid fa-dollar-sign"></i> +5.2% vs average</div>
         </div>
 
-        <!-- KPI CARD 4 -->
         <div class="glass-card kpi-card span-1">
             <div class="subtext-label">Model Status</div>
             <div class="kpi-value" style="color: #34d399;">Active</div>
             <div class="kpi-subtext" style="color: #a7f3d0;"><i class="fa-solid fa-shield-halved"></i> AdaBoost Classifier</div>
         </div>
 
-        <!-- FEATURE FORM CARD -->
         <div class="glass-card span-2">
             <div style="margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center;">
                 <span class="section-label"><i class="fa-solid fa-sliders" style="color:var(--accent-glow)"></i> Input Features</span>
-                <button class="btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="loadPresetSample()">
+                <button class="btn-secondary" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;" onclick="loadPresetSample()">
                     <i class="fa-solid fa-wand-magic-sparkles"></i> Preset High-Value
                 </button>
             </div>
@@ -775,7 +265,6 @@ HTML_TEMPLATE = """
             </form>
         </div>
 
-        <!-- RADAR OUTPUT DISPLAY CARD -->
         <div class="glass-card span-2">
             <div style="margin-bottom:0.85rem;" class="section-label">
                 <i class="fa-solid fa-chart-radar" style="color:var(--accent-glow)"></i> Input Feature Radar Profile
@@ -786,19 +275,18 @@ HTML_TEMPLATE = """
                     <i class="fa-solid fa-check-circle"></i> <span id="predictionResult">Ready for Analysis</span>
                 </div>
                 <div style="font-size: 0.775rem; color: var(--text-muted); margin-top: 0.35rem;" id="resultDesc">
-                    Configure feature inputs on the left and click Execute Prediction to evaluate model output.
+                    Configure feature inputs on the left and click Execute Prediction.
                 </div>
             </div>
 
             <div class="chart-container">
-                <canvas id="radarChart"></canvas>
+                <canvas id="radarCanvas" width="280" height="230"></canvas>
             </div>
         </div>
 
-        <!-- HISTORY LOG TABLE -->
         <div class="glass-card span-4">
-            <div style="margin-bottom:0.85rem; display:flex; justify-content:space-between; align-items:center;">
-                <span class="section-label"><i class="fa-solid fa-list-check" style="color:var(--accent-glow)"></i> AI Churn Analytics History Log</span>
+            <div style="margin-bottom:0.85rem;" class="section-label">
+                <i class="fa-solid fa-list-check" style="color:var(--accent-glow)"></i> AI Churn Analytics History Log
             </div>
             <div style="overflow-x: auto;">
                 <table id="logsTable">
@@ -829,25 +317,112 @@ HTML_TEMPLATE = """
                 </table>
             </div>
         </div>
-
     </div>
 
     <footer>
-        AI Churn Analytics Studio &bull; Flask & Scikit-Learn Enterprise Deployment
+        AI Churn Analytics Studio &bull; Flask & Scikit-Learn Production
     </footer>
 
-    <!-- ======================================================================
-         INTERACTIVE JAVASCRIPT LOGIC
-         ====================================================================== -->
+    <!-- PURE NATIVE JAVASCRIPT RADAR DRAWING ENGINE (ZERO EXTERNAL LIBRARY DEPENDENCIES) -->
     <script>
-        let radarChart = null;
+        let currentValues = [24, 18, 2, 1, 85, 5];
+        const labels = ['Tenure', 'Usage', 'Calls', 'Delay', 'Spend', 'Interact'];
+
+        function drawRadarChart(values) {
+            const canvas = document.getElementById('radarCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = Math.min(centerX, centerY) - 35;
+            const numPoints = labels.length;
+
+            ctx.clearRect(0, 0, width, height);
+
+            const style = getComputedStyle(document.documentElement);
+            const accentColor = style.getPropertyValue('--accent-glow').trim() || '#6366f1';
+
+            // Draw Background Radar Web Rings
+            for (let r = 0.2; r <= 1.0; r += 0.2) {
+                ctx.beginPath();
+                for (let i = 0; i < numPoints; i++) {
+                    const angle = (Math.PI * 2 / numPoints) * i - (Math.PI / 2);
+                    const x = centerX + Math.cos(angle) * (radius * r);
+                    const y = centerY + Math.sin(angle) * (radius * r);
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+
+            // Draw Radar Spokes & Labels
+            ctx.fillStyle = '#9ca3af';
+            ctx.font = '10px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            for (let i = 0; i < numPoints; i++) {
+                const angle = (Math.PI * 2 / numPoints) * i - (Math.PI / 2);
+                const x = centerX + Math.cos(angle) * radius;
+                const y = centerY + Math.sin(angle) * radius;
+
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(x, y);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+                ctx.stroke();
+
+                const lx = centerX + Math.cos(angle) * (radius + 18);
+                const ly = centerY + Math.sin(angle) * (radius + 18);
+                ctx.fillText(labels[i], lx, ly);
+            }
+
+            // Draw Data Polygon
+            ctx.beginPath();
+            for (let i = 0; i < numPoints; i++) {
+                const val = Math.min(Math.max(values[i], 0), 100) / 100;
+                const angle = (Math.PI * 2 / numPoints) * i - (Math.PI / 2);
+                const x = centerX + Math.cos(angle) * (radius * val);
+                const y = centerY + Math.sin(angle) * (radius * val);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+
+            ctx.fillStyle = accentColor + '33';
+            ctx.fill();
+            ctx.strokeStyle = accentColor;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw Data Points
+            for (let i = 0; i < numPoints; i++) {
+                const val = Math.min(Math.max(values[i], 0), 100) / 100;
+                const angle = (Math.PI * 2 / numPoints) * i - (Math.PI / 2);
+                const x = centerX + Math.cos(angle) * (radius * val);
+                const y = centerY + Math.sin(angle) * (radius * val);
+
+                ctx.beginPath();
+                ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+                ctx.fillStyle = accentColor;
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+        }
 
         function setTheme(themeName) {
             document.documentElement.setAttribute('data-theme', themeName);
             document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.remove('active'));
             const activeBtn = document.querySelector(`.theme-${themeName}`);
             if (activeBtn) activeBtn.classList.add('active');
-            updateChartTheme();
+            drawRadarChart(currentValues);
         }
 
         function loadPresetSample() {
@@ -865,53 +440,6 @@ HTML_TEMPLATE = """
 
         function resetForm() {
             document.getElementById('predictionForm').reset();
-        }
-
-        function initChart() {
-            try {
-                const ctx = document.getElementById('radarChart');
-                if (!ctx || typeof Chart === 'undefined') return;
-
-                radarChart = new Chart(ctx.getContext('2d'), {
-                    type: 'radar',
-                    data: {
-                        labels: ['Tenure', 'Usage', 'Calls', 'Delay', 'Spend Scale', 'Interaction'],
-                        datasets: [{
-                            label: 'Feature Scale',
-                            data: [24, 18, 2, 1, 85, 5],
-                            backgroundColor: 'rgba(99, 102, 241, 0.25)',
-                            borderColor: '#6366f1',
-                            borderWidth: 2,
-                            pointBackgroundColor: '#6366f1'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            r: {
-                                angleLines: { color: 'rgba(255,255,255,0.1)' },
-                                grid: { color: 'rgba(255,255,255,0.1)' },
-                                pointLabels: { color: '#9ca3af', font: { size: 10, family: 'Inter' } },
-                                ticks: { display: false }
-                            }
-                        },
-                        plugins: { legend: { display: false } }
-                    }
-                });
-            } catch (err) {
-                console.warn('Chart initialization skipped:', err);
-            }
-        }
-
-        function updateChartTheme() {
-            if (!radarChart) return;
-            const style = getComputedStyle(document.documentElement);
-            const accent = style.getPropertyValue('--accent-glow').trim() || '#6366f1';
-            radarChart.data.datasets[0].backgroundColor = accent + '40';
-            radarChart.data.datasets[0].borderColor = accent;
-            radarChart.data.datasets[0].pointBackgroundColor = accent;
-            radarChart.update();
         }
 
         async function handlePredict(event) {
@@ -977,28 +505,29 @@ HTML_TEMPLATE = """
                         tbody.insertBefore(row, tbody.firstChild);
                     }
 
-                    if (radarChart) {
-                        radarChart.data.datasets[0].data = [
-                            payload.Tenure, payload.Usage_Frequency, payload.Support_Calls, 
-                            payload.Payment_Delay, Math.min(payload.Total_Spend / 10, 100), payload.Last_Interaction
-                        ];
-                        radarChart.update();
-                    }
+                    currentValues = [
+                        payload.Tenure, 
+                        payload.Usage_Frequency, 
+                        payload.Support_Calls * 10, 
+                        payload.Payment_Delay * 10, 
+                        Math.min(payload.Total_Spend / 15, 100), 
+                        payload.Last_Interaction * 5
+                    ];
+                    drawRadarChart(currentValues);
                 } else {
-                    alert('Prediction Failed:\n\n' + data.message);
+                    alert('Prediction Error:\n\n' + data.message);
                 }
             } catch (err) {
-                alert('Network Connection Error: ' + err.message);
+                alert('Network Error: ' + err.message);
             } finally {
                 if (spinner) spinner.style.display = 'none';
                 if (btnIcon) btnIcon.style.display = 'inline-block';
             }
         }
 
-        window.addEventListener('DOMContentLoaded', function() {
-            initChart();
-            updateChartTheme();
-        });
+        window.onload = function() {
+            drawRadarChart(currentValues);
+        };
     </script>
 </body>
 </html>
