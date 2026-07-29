@@ -7,7 +7,7 @@ from flask import Flask, request, jsonify, render_template_string
 app = Flask(__name__)
 
 # ==============================================================================
-# BASE DIRECTORY & MODEL INITIALIZATION
+# BASE DIRECTORY & MODEL LOADING
 # ==============================================================================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "ADABoost.pkl")
@@ -33,14 +33,14 @@ except Exception as e:
     LOAD_ERROR = f"PICKLE UNPICKLING FAILED: {str(e)}\n\nTRACEBACK:\n{traceback.format_exc()}"
 
 # ==============================================================================
-# CATEGORICAL FEATURE ENCODING MAPPINGS
+# CATEGORICAL ENCODING MAPPINGS
 # ==============================================================================
 GENDER_MAP = {"Male": 0, "Female": 1}
 SUBSCRIPTION_MAP = {"Basic": 0, "Standard": 1, "Premium": 2}
 CONTRACT_MAP = {"Monthly": 0, "Quarterly": 1, "Annual": 2}
 
 # ==============================================================================
-# FAIL-SAFE HTML / CSS / JS TEMPLATE (ZERO EXTERNAL JS DEPENDENCIES)
+# HTML / CSS / JS TEMPLATE WITH ENHANCED ANALYTICAL OUTPUT PANEL
 # ==============================================================================
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -117,12 +117,25 @@ HTML_TEMPLATE = """
         .btn-premium:hover { opacity: 0.95; transform: translateY(-1px); }
         .btn-secondary { flex: 1; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.85rem; font-weight: 600; padding: 0.8rem; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.4rem; }
 
-        .result-box { text-align: center; padding: 1rem; background: rgba(0, 0, 0, 0.25); border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 1rem; }
-        .badge-status { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.35rem 0.9rem; border-radius: 20px; font-weight: 700; font-size: 0.875rem; }
+        /* ANALYTICS OUTPUT DISPLAY ELEMENTS */
+        .analytics-panel { display: flex; flex-direction: column; gap: 1.1rem; }
+        
+        .result-box { text-align: center; padding: 1.1rem; background: rgba(0, 0, 0, 0.25); border-radius: 14px; border: 1px solid var(--border-color); }
+        .badge-status { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.4rem 1.1rem; border-radius: 20px; font-weight: 700; font-size: 0.925rem; }
         .badge-pos { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
         .badge-neg { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
 
-        .chart-container { position: relative; height: 260px; width: 100%; display: flex; justify-content: center; align-items: center; }
+        .prob-bar-wrapper { width: 100%; background: rgba(255, 255, 255, 0.08); border-radius: 10px; height: 10px; overflow: hidden; margin: 0.6rem 0; }
+        .prob-bar-fill { height: 100%; width: 0%; background: var(--accent-gradient); transition: width 0.6s ease; }
+
+        .metrics-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+        .metric-card { background: rgba(0, 0, 0, 0.2); padding: 0.8rem 1rem; border-radius: 10px; border: 1px solid var(--border-color); }
+        .metric-title { font-size: 0.68rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
+        .metric-val { font-size: 1.1rem; font-weight: 800; margin-top: 0.2rem; }
+
+        .recom-box { background: rgba(99, 102, 241, 0.12); border-left: 4px solid var(--accent-glow); padding: 0.85rem 1rem; border-radius: 8px; font-size: 0.825rem; line-height: 1.4; color: var(--text-main); }
+
+        .chart-container { position: relative; height: 210px; width: 100%; display: flex; justify-content: center; align-items: center; }
         canvas { max-width: 100%; max-height: 100%; }
 
         table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; font-size: 0.825rem; }
@@ -156,6 +169,7 @@ HTML_TEMPLATE = """
     </header>
 
     <div class="dashboard-grid">
+        <!-- TOP KPI WIDGETS -->
         <div class="glass-card kpi-card span-1">
             <div class="subtext-label">Total Evaluated</div>
             <div class="kpi-value" id="kpiTotal">1,248</div>
@@ -175,14 +189,15 @@ HTML_TEMPLATE = """
         </div>
 
         <div class="glass-card kpi-card span-1">
-            <div class="subtext-label">Model Status</div>
+            <div class="subtext-label">Model Engine</div>
             <div class="kpi-value" style="color: #34d399;">Active</div>
-            <div class="kpi-subtext" style="color: #a7f3d0;"><i class="fa-solid fa-shield-halved"></i> AdaBoost Classifier</div>
+            <div class="kpi-subtext" style="color: #a7f3d0;"><i class="fa-solid fa-shield-halved"></i> AdaBoost Model</div>
         </div>
 
+        <!-- INPUT FORM COLUMN -->
         <div class="glass-card span-2">
             <div style="margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center;">
-                <span class="section-label"><i class="fa-solid fa-sliders" style="color:var(--accent-glow)"></i> Input Features</span>
+                <span class="section-label"><i class="fa-solid fa-sliders" style="color:var(--accent-glow)"></i> Feature Parameters</span>
                 <button class="btn-secondary" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;" onclick="loadPresetSample()">
                     <i class="fa-solid fa-wand-magic-sparkles"></i> Preset High-Value
                 </button>
@@ -255,7 +270,7 @@ HTML_TEMPLATE = """
                         <button type="submit" class="btn-premium">
                             <span class="spinner" id="spinner"></span>
                             <i class="fa-solid fa-bolt" id="btnIcon"></i>
-                            <span>Execute Prediction</span>
+                            <span>Execute Analysis</span>
                         </button>
                         <button type="button" class="btn-secondary" onclick="resetForm()">
                             <i class="fa-solid fa-rotate-left"></i> Reset
@@ -265,28 +280,55 @@ HTML_TEMPLATE = """
             </form>
         </div>
 
-        <div class="glass-card span-2">
-            <div style="margin-bottom:0.85rem;" class="section-label">
-                <i class="fa-solid fa-chart-radar" style="color:var(--accent-glow)"></i> Input Feature Radar Profile
+        <!-- DEDICATED ANALYTICAL OUTPUT COLUMN -->
+        <div class="glass-card span-2 analytics-panel">
+            <div class="section-label">
+                <i class="fa-solid fa-chart-line" style="color:var(--accent-glow)"></i> Analytical Output Panel
             </div>
             
             <div class="result-box">
                 <div class="badge-status badge-pos" id="resultBadge">
                     <i class="fa-solid fa-check-circle"></i> <span id="predictionResult">Ready for Analysis</span>
                 </div>
-                <div style="font-size: 0.775rem; color: var(--text-muted); margin-top: 0.35rem;" id="resultDesc">
-                    Configure feature inputs on the left and click Execute Prediction.
+                
+                <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-muted); margin-top:0.4rem;">
+                    <span>Confidence Score</span>
+                    <span id="probScore">--</span>
+                </div>
+                <div class="prob-bar-wrapper">
+                    <div class="prob-bar-fill" id="probBar"></div>
+                </div>
+                
+                <div style="font-size: 0.775rem; color: var(--text-muted);" id="resultDesc">
+                    Fill parameters on the left and click Execute Analysis.
                 </div>
             </div>
 
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-title">Risk Category</div>
+                    <div class="metric-val" id="metricRisk">--</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Primary Driver</div>
+                    <div class="metric-val" id="metricDriver">--</div>
+                </div>
+            </div>
+
+            <div class="recom-box" id="recomBox">
+                <i class="fa-solid fa-circle-info" style="color:var(--accent-glow);"></i> 
+                <span id="recomText">Automated intervention guidance will be generated upon evaluation.</span>
+            </div>
+
             <div class="chart-container">
-                <canvas id="radarCanvas" width="280" height="230"></canvas>
+                <canvas id="radarCanvas" width="280" height="210"></canvas>
             </div>
         </div>
 
+        <!-- HISTORY LOG TABLE COLUMN -->
         <div class="glass-card span-4">
             <div style="margin-bottom:0.85rem;" class="section-label">
-                <i class="fa-solid fa-list-check" style="color:var(--accent-glow)"></i> AI Churn Analytics History Log
+                <i class="fa-solid fa-list-check" style="color:var(--accent-glow)"></i> AI Analytics Executed History Log
             </div>
             <div style="overflow-x: auto;">
                 <table id="logsTable">
@@ -320,10 +362,10 @@ HTML_TEMPLATE = """
     </div>
 
     <footer>
-        AI Churn Analytics Studio &bull; Flask & Scikit-Learn Production
+        AI Churn Analytics Studio &bull; Enterprise Flask Deployment
     </footer>
 
-    <!-- PURE NATIVE JAVASCRIPT RADAR DRAWING ENGINE (ZERO EXTERNAL LIBRARY DEPENDENCIES) -->
+    <!-- PURE NATIVE JAVASCRIPT DRAWING & ENGINE -->
     <script>
         let currentValues = [24, 18, 2, 1, 85, 5];
         const labels = ['Tenure', 'Usage', 'Calls', 'Delay', 'Spend', 'Interact'];
@@ -336,7 +378,7 @@ HTML_TEMPLATE = """
             const height = canvas.height;
             const centerX = width / 2;
             const centerY = height / 2;
-            const radius = Math.min(centerX, centerY) - 35;
+            const radius = Math.min(centerX, centerY) - 30;
             const numPoints = labels.length;
 
             ctx.clearRect(0, 0, width, height);
@@ -344,8 +386,7 @@ HTML_TEMPLATE = """
             const style = getComputedStyle(document.documentElement);
             const accentColor = style.getPropertyValue('--accent-glow').trim() || '#6366f1';
 
-            // Draw Background Radar Web Rings
-            for (let r = 0.2; r <= 1.0; r += 0.2) {
+            for (let r = 0.25; r <= 1.0; r += 0.25) {
                 ctx.beginPath();
                 for (let i = 0; i < numPoints; i++) {
                     const angle = (Math.PI * 2 / numPoints) * i - (Math.PI / 2);
@@ -360,7 +401,6 @@ HTML_TEMPLATE = """
                 ctx.stroke();
             }
 
-            // Draw Radar Spokes & Labels
             ctx.fillStyle = '#9ca3af';
             ctx.font = '10px Inter, sans-serif';
             ctx.textAlign = 'center';
@@ -377,12 +417,11 @@ HTML_TEMPLATE = """
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
                 ctx.stroke();
 
-                const lx = centerX + Math.cos(angle) * (radius + 18);
-                const ly = centerY + Math.sin(angle) * (radius + 18);
+                const lx = centerX + Math.cos(angle) * (radius + 16);
+                const ly = centerY + Math.sin(angle) * (radius + 16);
                 ctx.fillText(labels[i], lx, ly);
             }
 
-            // Draw Data Polygon
             ctx.beginPath();
             for (let i = 0; i < numPoints; i++) {
                 const val = Math.min(Math.max(values[i], 0), 100) / 100;
@@ -400,7 +439,6 @@ HTML_TEMPLATE = """
             ctx.lineWidth = 2;
             ctx.stroke();
 
-            // Draw Data Points
             for (let i = 0; i < numPoints; i++) {
                 const val = Math.min(Math.max(values[i], 0), 100) / 100;
                 const angle = (Math.PI * 2 / numPoints) * i - (Math.PI / 2);
@@ -408,7 +446,7 @@ HTML_TEMPLATE = """
                 const y = centerY + Math.sin(angle) * (radius * val);
 
                 ctx.beginPath();
-                ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+                ctx.arc(x, y, 3, 0, Math.PI * 2);
                 ctx.fillStyle = accentColor;
                 ctx.fill();
                 ctx.strokeStyle = '#ffffff';
@@ -476,17 +514,33 @@ HTML_TEMPLATE = """
                     const badge = document.getElementById('resultBadge');
                     const resTitle = document.getElementById('predictionResult');
                     const resDesc = document.getElementById('resultDesc');
+                    const probScore = document.getElementById('probScore');
+                    const probBar = document.getElementById('probBar');
+                    const metricRisk = document.getElementById('metricRisk');
+                    const metricDriver = document.getElementById('metricDriver');
+                    const recomText = document.getElementById('recomText');
 
                     resTitle.innerText = data.prediction_label;
-                    
+                    const pct = (data.probability * 100).toFixed(1);
+                    probScore.innerText = pct + '%';
+                    probBar.style.width = pct + '%';
+
                     if (data.prediction === 1) {
                         badge.className = 'badge-status badge-pos';
                         badge.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${data.prediction_label}`;
-                        resDesc.innerText = `High probability positive output (${(data.probability * 100).toFixed(1)}% confidence).`;
+                        resDesc.innerText = `Evaluated positive classification with ${pct}% model probability.`;
+                        metricRisk.innerText = 'Low / Retained';
+                        metricRisk.style.color = '#34d399';
+                        metricDriver.innerText = 'High Engagement';
+                        recomText.innerText = 'Account displays optimal retention behavior. Maintain standard operational engagement.';
                     } else {
                         badge.className = 'badge-status badge-neg';
                         badge.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> ${data.prediction_label}`;
-                        resDesc.innerText = `Standard/Negative outcome identified (${(data.probability * 100).toFixed(1)}% confidence).`;
+                        resDesc.innerText = `Evaluated negative classification with ${pct}% model probability.`;
+                        metricRisk.innerText = 'High Churn Risk';
+                        metricRisk.style.color = '#f87171';
+                        metricDriver.innerText = payload.Payment_Delay > 5 ? 'Payment Delay' : (payload.Support_Calls > 3 ? 'Support Friction' : 'Low Usage');
+                        recomText.innerText = 'High risk indicator identified. Trigger priority customer success retention sequence.';
                     }
 
                     const tbody = document.querySelector('#logsTable tbody');
@@ -518,7 +572,7 @@ HTML_TEMPLATE = """
                     alert('Prediction Error:\n\n' + data.message);
                 }
             } catch (err) {
-                alert('Network Error: ' + err.message);
+                alert('Network Connection Error: ' + err.message);
             } finally {
                 if (spinner) spinner.style.display = 'none';
                 if (btnIcon) btnIcon.style.display = 'inline-block';
