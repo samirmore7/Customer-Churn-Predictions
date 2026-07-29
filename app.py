@@ -19,12 +19,12 @@ def get_model():
             model = pickle.load(f)
     return model
 
-# --- CATEGORICAL FEATURE ENCODING DICTIONARIES ---
+# --- CATEGORICAL MAPPINGS ---
 GENDER_MAP = {"Male": 0, "Female": 1}
 SUBSCRIPTION_MAP = {"Basic": 0, "Standard": 1, "Premium": 2}
 CONTRACT_MAP = {"Monthly": 0, "Quarterly": 1, "Annual": 2}
 
-# --- COMPLETE SINGLE-FILE HTML/CSS/JS TEMPLATE ---
+# --- TEMPLATE ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en" data-theme="obsidian">
@@ -32,16 +32,13 @@ HTML_TEMPLATE = """
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Churn Analytics Studio</title>
-    <!-- Modern Clean Typography Stack -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            /* Theme 1: Obsidian Cyber */
             --bg-primary: #0b0f19;
             --bg-secondary: #111827;
             --bg-glass: rgba(17, 24, 39, 0.8);
@@ -55,7 +52,6 @@ HTML_TEMPLATE = """
         }
 
         [data-theme="amethyst"] {
-            /* Theme 2: Amethyst Glass */
             --bg-primary: #0d0914;
             --bg-secondary: #191224;
             --bg-glass: rgba(25, 18, 36, 0.8);
@@ -69,7 +65,6 @@ HTML_TEMPLATE = """
         }
 
         [data-theme="emerald"] {
-            /* Theme 3: Emerald Executive */
             --bg-primary: #061412;
             --bg-secondary: #0b2420;
             --bg-glass: rgba(11, 36, 32, 0.8);
@@ -83,7 +78,6 @@ HTML_TEMPLATE = """
         }
 
         [data-theme="gold"] {
-            /* Theme 4: Midnight Gold */
             --bg-primary: #120f0a;
             --bg-secondary: #211c13;
             --bg-glass: rgba(33, 28, 19, 0.8);
@@ -97,7 +91,6 @@ HTML_TEMPLATE = """
         }
 
         [data-theme="rosegold"] {
-            /* Theme 5: Rose Gold Luxe */
             --bg-primary: #170a0f;
             --bg-secondary: #27121a;
             --bg-glass: rgba(39, 18, 26, 0.8);
@@ -111,7 +104,6 @@ HTML_TEMPLATE = """
         }
 
         [data-theme="cyan"] {
-            /* Theme 6: Electric Cyan */
             --bg-primary: #04131a;
             --bg-secondary: #08232f;
             --bg-glass: rgba(8, 35, 47, 0.8);
@@ -125,7 +117,6 @@ HTML_TEMPLATE = """
         }
 
         [data-theme="crimson"] {
-            /* Theme 7: Sunset Crimson */
             --bg-primary: #1a0909;
             --bg-secondary: #2c0f0f;
             --bg-glass: rgba(44, 15, 15, 0.8);
@@ -139,7 +130,6 @@ HTML_TEMPLATE = """
         }
 
         [data-theme="platinum"] {
-            /* Theme 8: Titanium Platinum */
             --bg-primary: #f8fafc;
             --bg-secondary: #ffffff;
             --bg-glass: rgba(255, 255, 255, 0.85);
@@ -173,7 +163,6 @@ HTML_TEMPLATE = """
                 radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.06) 0%, transparent 40%);
         }
 
-        /* --- Header --- */
         header {
             padding: 1.1rem 2rem;
             display: flex;
@@ -239,7 +228,6 @@ HTML_TEMPLATE = """
         .theme-crimson { background: #ef4444; }
         .theme-platinum { background: #64748b; }
 
-        /* --- Dashboard Layout --- */
         .dashboard-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -298,7 +286,6 @@ HTML_TEMPLATE = """
             letter-spacing: 0.08em;
         }
 
-        /* --- KPI Cards --- */
         .kpi-card {
             display: flex;
             flex-direction: column;
@@ -324,7 +311,6 @@ HTML_TEMPLATE = """
             gap: 0.35rem;
         }
 
-        /* --- Input Form --- */
         .form-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -372,7 +358,6 @@ HTML_TEMPLATE = """
             color: var(--text-main);
         }
 
-        /* --- Buttons --- */
         .btn-group {
             grid-column: span 2;
             display: flex;
@@ -431,7 +416,6 @@ HTML_TEMPLATE = """
             border-color: rgba(255, 255, 255, 0.18);
         }
 
-        /* --- Output Card --- */
         .result-box {
             text-align: center;
             padding: 1.1rem;
@@ -463,7 +447,6 @@ HTML_TEMPLATE = """
             width: 100%;
         }
 
-        /* --- Table --- */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -509,7 +492,6 @@ HTML_TEMPLATE = """
 </head>
 <body>
 
-    <!-- Header -->
     <header>
         <div class="logo">
             <div class="logo-icon"><i class="fa-solid fa-chart-pie"></i></div>
@@ -529,10 +511,7 @@ HTML_TEMPLATE = """
         </div>
     </header>
 
-    <!-- Main Grid -->
     <div class="dashboard-grid">
-        
-        <!-- KPIs -->
         <div class="glass-card kpi-card span-1">
             <div class="subtext-label">Total Evaluated</div>
             <div class="kpi-value" id="kpiTotal">1,248</div>
@@ -557,7 +536,6 @@ HTML_TEMPLATE = """
             <div class="kpi-subtext" style="color: #a7f3d0;"><i class="fa-solid fa-shield-halved"></i> 50 Decision Trees</div>
         </div>
 
-        <!-- Form Panel -->
         <div class="glass-card span-2">
             <div style="margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center;">
                 <span class="section-label"><i class="fa-solid fa-sliders" style="color:var(--accent-glow)"></i> Input Features</span>
@@ -643,7 +621,6 @@ HTML_TEMPLATE = """
             </form>
         </div>
 
-        <!-- Radar & Output -->
         <div class="glass-card span-2">
             <div style="margin-bottom:0.85rem;" class="section-label">
                 <i class="fa-solid fa-chart-radar" style="color:var(--accent-glow)"></i> Input Feature Radar Profile
@@ -663,7 +640,6 @@ HTML_TEMPLATE = """
             </div>
         </div>
 
-        <!-- Dynamic History Table -->
         <div class="glass-card span-4">
             <div style="margin-bottom:0.85rem; display:flex; justify-content:space-between; align-items:center;">
                 <span class="section-label"><i class="fa-solid fa-list-check" style="color:var(--accent-glow)"></i> AI Churn Analytics History Log</span>
@@ -697,15 +673,12 @@ HTML_TEMPLATE = """
                 </table>
             </div>
         </div>
-
     </div>
 
-    <!-- Footer -->
     <footer>
         AI Churn Analytics &bull; Flask & Pickle Web Deployment
     </footer>
 
-    <!-- JavaScript -->
     <script>
         let radarChart;
 
@@ -845,7 +818,7 @@ HTML_TEMPLATE = """
                 }
             } catch (err) {
                 console.error(err);
-                alert('Server Communication Error: Make sure ADABoost.pkl is committed to git and pushed to Render.');
+                alert('Server Error: Check Render logs to verify ADABoost.pkl is loaded.');
             } finally {
                 spinner.style.display = 'none';
                 btnIcon.style.display = 'inline-block';
@@ -861,7 +834,7 @@ HTML_TEMPLATE = """
 </html>
 """
 
-# --- ROUTE CONTROLLERS ---
+# --- ROUTES ---
 @app.route("/")
 def index():
     return render_template_string(HTML_TEMPLATE)
@@ -876,7 +849,6 @@ def predict():
         sub_num = SUBSCRIPTION_MAP.get(data.get("Subscription_Type", "Basic"), 0)
         contract_num = CONTRACT_MAP.get(data.get("Contract_Length", "Monthly"), 0)
 
-        # Feature order required by trained model
         features = np.array([[
             float(data.get("Age", 0)),
             gender_num,
@@ -891,12 +863,7 @@ def predict():
         ]])
 
         prediction = int(clf.predict(features)[0])
-
-        if hasattr(clf, "predict_proba"):
-            probs = clf.predict_proba(features)[0]
-            probability = float(probs[prediction])
-        else:
-            probability = 1.0
+        probability = float(clf.predict_proba(features)[0][prediction]) if hasattr(clf, "predict_proba") else 1.0
 
         return jsonify({
             "status": "success",
@@ -906,7 +873,7 @@ def predict():
         })
 
     except Exception as e:
-        print("--- BACKEND EXCEPTION ENCOUNTERED ---")
+        print("--- BACKEND EXCEPTION ---")
         traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
 
