@@ -6,22 +6,22 @@ from flask import Flask, request, jsonify, render_template_string
 
 app = Flask(__name__)
 
+# --- ROBUST ABSOLUTE PATH MODEL LOADING ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "ADABoost.pkl")
 
-# --- LOAD MODEL AT STARTUP ---
 MODEL = None
 LOAD_ERROR = None
 
 try:
     if os.path.exists(MODEL_PATH):
-        # Check if the file is a Git LFS pointer instead of actual binary
+        # Verify it is not a Git LFS text pointer
         file_size = os.path.getsize(MODEL_PATH)
         if file_size < 1000:
             with open(MODEL_PATH, "r") as f:
                 content = f.read(200)
             if "version https://git-lfs" in content:
-                LOAD_ERROR = f"GIT LFS POINTER DETECTED: File size is only {file_size} bytes. Please re-upload the real .pkl file via GitHub web UI."
+                LOAD_ERROR = f"GIT LFS POINTER DETECTED: File size is only {file_size} bytes. Re-upload the real binary .pkl file directly via GitHub web UI."
         
         if not LOAD_ERROR:
             with open(MODEL_PATH, "rb") as f:
@@ -36,7 +36,7 @@ GENDER_MAP = {"Male": 0, "Female": 1}
 SUBSCRIPTION_MAP = {"Basic": 0, "Standard": 1, "Premium": 2}
 CONTRACT_MAP = {"Monthly": 0, "Quarterly": 1, "Annual": 2}
 
-# --- TEMPLATE ---
+# --- UNCOMPRESSED FULL PREMIUM DASHBOARD TEMPLATE ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en" data-theme="obsidian">
@@ -44,6 +44,7 @@ HTML_TEMPLATE = """
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Churn Analytics Studio</title>
+    <!-- Modern Typography Stack: Inter & Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -229,8 +230,15 @@ HTML_TEMPLATE = """
             transition: transform 0.2s, border-color 0.2s;
         }
 
-        .theme-btn:hover { transform: scale(1.2); }
-        .theme-btn.active { border-color: #fff; transform: scale(1.1); }
+        .theme-btn:hover {
+            transform: scale(1.2);
+        }
+
+        .theme-btn.active {
+            border-color: #fff;
+            transform: scale(1.1);
+        }
+
         .theme-obsidian { background: #6366f1; }
         .theme-amethyst { background: #c084fc; }
         .theme-emerald { background: #10b981; }
@@ -256,8 +264,12 @@ HTML_TEMPLATE = """
         .span-4 { grid-column: span 4; }
 
         @media (max-width: 1024px) {
-            .dashboard-grid { grid-template-columns: 1fr; }
-            .span-1, .span-2, .span-3, .span-4 { grid-column: span 1; }
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            .span-1, .span-2, .span-3, .span-4 {
+                grid-column: span 1;
+            }
         }
 
         .glass-card {
@@ -274,7 +286,9 @@ HTML_TEMPLATE = """
         .glass-card::before {
             content: '';
             position: absolute;
-            top: 0; left: 0; right: 0;
+            top: 0;
+            left: 0;
+            right: 0;
             height: 2px;
             background: var(--accent-gradient);
             opacity: 0.6;
@@ -330,7 +344,9 @@ HTML_TEMPLATE = """
         }
 
         @media (max-width: 640px) {
-            .form-grid { grid-template-columns: 1fr; }
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         .input-group {
@@ -378,7 +394,10 @@ HTML_TEMPLATE = """
         }
 
         @media (max-width: 640px) {
-            .btn-group { grid-column: span 1; flex-direction: column; }
+            .btn-group {
+                grid-column: span 1;
+                flex-direction: column;
+            }
         }
 
         .btn-premium {
@@ -450,8 +469,17 @@ HTML_TEMPLATE = """
             letter-spacing: 0.02em;
         }
 
-        .badge-pos { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
-        .badge-neg { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .badge-pos {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .badge-neg {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
 
         .chart-container {
             position: relative;
@@ -499,7 +527,9 @@ HTML_TEMPLATE = """
             animation: spin 0.8s linear infinite;
         }
 
-        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -545,7 +575,7 @@ HTML_TEMPLATE = """
         <div class="glass-card kpi-card span-1">
             <div class="subtext-label">Model Status</div>
             <div class="kpi-value" style="color: #34d399;">Active</div>
-            <div class="kpi-subtext" style="color: #a7f3d0;"><i class="fa-solid fa-shield-halved"></i> 50 Decision Trees</div>
+            <div class="kpi-subtext" style="color: #a7f3d0;"><i class="fa-solid fa-shield-halved"></i> AdaBoost Classifier</div>
         </div>
 
         <div class="glass-card span-2">
@@ -688,7 +718,7 @@ HTML_TEMPLATE = """
     </div>
 
     <footer>
-        AI Churn Analytics &bull; Flask & Pickle Web Deployment
+        AI Churn Analytics Studio &bull; Powered by Flask & Scikit-Learn
     </footer>
 
     <script>
@@ -826,11 +856,10 @@ HTML_TEMPLATE = """
                     ];
                     radarChart.update();
                 } else {
-                    alert('Backend Prediction Error: ' + data.message);
+                    alert('Prediction Failed:\n\n' + data.message);
                 }
             } catch (err) {
-                console.error(err);
-                alert('Server Error: Visit /debug on your deployed domain to see full error diagnostics.');
+                alert('Network Connection Error: ' + err.message);
             } finally {
                 spinner.style.display = 'none';
                 btnIcon.style.display = 'inline-block';
@@ -846,11 +875,11 @@ HTML_TEMPLATE = """
 </html>
 """
 
+# --- ROUTES ---
 @app.route("/")
 def index():
     return render_template_string(HTML_TEMPLATE)
 
-# --- DEBUG ROUTE TO INSTANTLY SEE LOAD ERROR ---
 @app.route("/debug")
 def debug():
     if LOAD_ERROR:
@@ -893,7 +922,8 @@ def predict():
         })
 
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        error_msg = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+        return jsonify({"status": "error", "message": error_msg}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
