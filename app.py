@@ -6,25 +6,30 @@ from flask import Flask, request, jsonify, render_template_string
 
 app = Flask(__name__)
 
-# --- MODEL LOADING LOGIC ---
-MODEL_PATH = "ADABoost.pkl"
+# --- ROBUST ABSOLUTE PATH MODEL LOADING ---
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "ADABoost.pkl")
+
 model = None
 
 def get_model():
     global model
     if model is None:
         if not os.path.exists(MODEL_PATH):
-            raise FileNotFoundError(f"Model file '{MODEL_PATH}' not found in directory: {os.getcwd()}")
+            raise FileNotFoundError(
+                f"Model file 'ADABoost.pkl' not found at expected path: '{MODEL_PATH}'. "
+                f"Available files in directory: {os.listdir(BASE_DIR)}"
+            )
         with open(MODEL_PATH, "rb") as f:
             model = pickle.load(f)
     return model
 
-# --- CATEGORICAL MAPPINGS ---
+# --- CATEGORICAL ENCODING MAPPINGS ---
 GENDER_MAP = {"Male": 0, "Female": 1}
 SUBSCRIPTION_MAP = {"Basic": 0, "Standard": 1, "Premium": 2}
 CONTRACT_MAP = {"Monthly": 0, "Quarterly": 1, "Annual": 2}
 
-# --- TEMPLATE ---
+# --- APPLICATION TEMPLATE ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en" data-theme="obsidian">
@@ -32,6 +37,7 @@ HTML_TEMPLATE = """
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Churn Analytics Studio</title>
+    <!-- Modern Typography Stack: Inter & Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -818,7 +824,7 @@ HTML_TEMPLATE = """
                 }
             } catch (err) {
                 console.error(err);
-                alert('Server Error: Check Render logs to verify ADABoost.pkl is loaded.');
+                alert('Server Error: Make sure ADABoost.pkl is committed to git and pushed to Render.');
             } finally {
                 spinner.style.display = 'none';
                 btnIcon.style.display = 'inline-block';
@@ -834,7 +840,7 @@ HTML_TEMPLATE = """
 </html>
 """
 
-# --- ROUTES ---
+# --- ROUTE CONTROLLERS ---
 @app.route("/")
 def index():
     return render_template_string(HTML_TEMPLATE)
