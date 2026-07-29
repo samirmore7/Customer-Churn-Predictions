@@ -6,30 +6,37 @@ from flask import Flask, request, jsonify, render_template_string
 
 app = Flask(__name__)
 
-# --- ROBUST ABSOLUTE PATH MODEL LOADING ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "ADABoost.pkl")
 
-model = None
+# --- LOAD MODEL AT STARTUP ---
+MODEL = None
+LOAD_ERROR = None
 
-def get_model():
-    global model
-    if model is None:
-        if not os.path.exists(MODEL_PATH):
-            raise FileNotFoundError(
-                f"Model file 'ADABoost.pkl' not found at expected path: '{MODEL_PATH}'. "
-                f"Available files in directory: {os.listdir(BASE_DIR)}"
-            )
-        with open(MODEL_PATH, "rb") as f:
-            model = pickle.load(f)
-    return model
+try:
+    if os.path.exists(MODEL_PATH):
+        # Check if the file is a Git LFS pointer instead of actual binary
+        file_size = os.path.getsize(MODEL_PATH)
+        if file_size < 1000:
+            with open(MODEL_PATH, "r") as f:
+                content = f.read(200)
+            if "version https://git-lfs" in content:
+                LOAD_ERROR = f"GIT LFS POINTER DETECTED: File size is only {file_size} bytes. Please re-upload the real .pkl file via GitHub web UI."
+        
+        if not LOAD_ERROR:
+            with open(MODEL_PATH, "rb") as f:
+                MODEL = pickle.load(f)
+    else:
+        LOAD_ERROR = f"File not found at '{MODEL_PATH}'. Files in directory: {os.listdir(BASE_DIR)}"
+except Exception as e:
+    LOAD_ERROR = f"PICKLE UNPICKLING FAILED: {str(e)}\n\nTRACEBACK:\n{traceback.format_exc()}"
 
-# --- CATEGORICAL ENCODING MAPPINGS ---
+# --- CATEGORICAL MAPPINGS ---
 GENDER_MAP = {"Male": 0, "Female": 1}
 SUBSCRIPTION_MAP = {"Basic": 0, "Standard": 1, "Premium": 2}
 CONTRACT_MAP = {"Monthly": 0, "Quarterly": 1, "Annual": 2}
 
-# --- APPLICATION TEMPLATE ---
+# --- TEMPLATE ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en" data-theme="obsidian">
@@ -37,7 +44,6 @@ HTML_TEMPLATE = """
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Churn Analytics Studio</title>
-    <!-- Modern Typography Stack: Inter & Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -824,7 +830,7 @@ HTML_TEMPLATE = """
                 }
             } catch (err) {
                 console.error(err);
-                alert('Server Error: Make sure ADABoost.pkl is committed to git and pushed to Render.');
+                alert('Server Error: Visit /debug on your deployed domain to see full error diagnostics.');
             } finally {
                 spinner.style.display = 'none';
                 btnIcon.style.display = 'inline-block';
@@ -840,15 +846,23 @@ HTML_TEMPLATE = """
 </html>
 """
 
-# --- ROUTE CONTROLLERS ---
 @app.route("/")
 def index():
     return render_template_string(HTML_TEMPLATE)
 
+# --- DEBUG ROUTE TO INSTANTLY SEE LOAD ERROR ---
+@app.route("/debug")
+def debug():
+    if LOAD_ERROR:
+        return f"<h3>Model Load Diagnostic Error:</h3><pre>{LOAD_ERROR}</pre>"
+    return "<h3>Model Loaded Successfully!</h3>"
+
 @app.route("/predict", methods=["POST"])
 def predict():
+    if LOAD_ERROR or MODEL is None:
+        return jsonify({"status": "error", "message": f"Model failed to load at startup: {LOAD_ERROR}"}), 500
+
     try:
-        clf = get_model()
         data = request.get_json(force=True)
 
         gender_num = GENDER_MAP.get(data.get("Gender", "Male"), 0)
@@ -868,8 +882,8 @@ def predict():
             float(data.get("Last_Interaction", 0))
         ]])
 
-        prediction = int(clf.predict(features)[0])
-        probability = float(clf.predict_proba(features)[0][prediction]) if hasattr(clf, "predict_proba") else 1.0
+        prediction = int(MODEL.predict(features)[0])
+        probability = float(MODEL.predict_proba(features)[0][prediction]) if hasattr(MODEL, "predict_proba") else 1.0
 
         return jsonify({
             "status": "success",
@@ -879,8 +893,6 @@ def predict():
         })
 
     except Exception as e:
-        print("--- BACKEND EXCEPTION ---")
-        traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == "__main__":
