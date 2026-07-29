@@ -5,7 +5,7 @@ from flask import Flask, render_template_string, request, jsonify
 
 app = Flask(__name__)
 
-# Load the trained AdaBoost model
+# Load the trained model
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "ADABoost.pkl")
 model = None
 
@@ -16,7 +16,7 @@ try:
 except Exception as e:
     print(f"Error loading model: {e}")
 
-# Mappings for categorical features to numerical values expected by AdaBoost
+# Categorical mappings matching model training configuration
 CATEGORICAL_MAPPINGS = {
     "Gender": {"Female": 0, "Male": 1},
     "Subscription Type": {"Basic": 0, "Standard": 1, "Premium": 2},
@@ -25,57 +25,79 @@ CATEGORICAL_MAPPINGS = {
 
 HTML_TEMPLATE = """
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="dark-glass">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AdaBoost AI Predictive Engine</title>
+    <title>AI Churn Prediction Studio</title>
+    
     <!-- Google Fonts & FontAwesome Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <style>
-        :root {
-            /* Dark Theme Colors (Default) */
-            --bg-base: #0a0d14;
-            --bg-surface: rgba(18, 24, 38, 0.7);
-            --bg-card: rgba(26, 34, 53, 0.6);
-            --border-glow: rgba(99, 102, 241, 0.25);
-            --border-card: rgba(255, 255, 255, 0.08);
-            
-            --text-main: #f3f4f6;
-            --text-muted: #9ca3af;
-            --text-glow: #a5b4fc;
 
-            --accent-primary: #6366f1;
+    <style>
+        /* Theme Variables */
+        :root {
+            /* Theme 1: Dark Glass (Default) */
+            --bg-base: #060913;
+            --bg-surface: rgba(15, 23, 42, 0.65);
+            --bg-card: rgba(30, 41, 59, 0.5);
+            --border-card: rgba(255, 255, 255, 0.08);
+            --border-focus: rgba(99, 102, 241, 0.5);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
             --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
-            --accent-hover: linear-gradient(135deg, #4f46e5 0%, #9333ea 50%, #db2777 100%);
-            
-            --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-            --shadow-neon: 0 0 20px rgba(99, 102, 241, 0.4);
+            --accent-glow: rgba(99, 102, 241, 0.4);
+            --btn-shadow: 0 0 25px rgba(99, 102, 241, 0.5);
         }
 
-        [data-theme="light"] {
-            /* Light Theme Colors */
-            --bg-base: #f0f4f9;
+        [data-theme="emerald"] {
+            /* Theme 2: Emerald Luxury */
+            --bg-base: #021a12;
+            --bg-surface: rgba(6, 44, 32, 0.7);
+            --bg-card: rgba(11, 61, 44, 0.5);
+            --border-card: rgba(52, 211, 153, 0.15);
+            --border-focus: rgba(16, 185, 129, 0.6);
+            --text-main: #f0fdf4;
+            --text-muted: #86efac;
+            --accent-gradient: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%);
+            --accent-glow: rgba(16, 185, 129, 0.4);
+            --btn-shadow: 0 0 25px rgba(16, 185, 129, 0.5);
+        }
+
+        [data-theme="cyberpunk"] {
+            /* Theme 3: Cyberpunk Neon */
+            --bg-base: #0f051d;
+            --bg-surface: rgba(29, 9, 54, 0.75);
+            --bg-card: rgba(49, 14, 89, 0.5);
+            --border-card: rgba(236, 72, 153, 0.2);
+            --border-focus: rgba(244, 114, 182, 0.7);
+            --text-main: #fff1f2;
+            --text-muted: #f472b6;
+            --accent-gradient: linear-gradient(135deg, #ff007f 0%, #7928ca 50%, #00dfd8 100%);
+            --accent-glow: rgba(255, 0, 127, 0.5);
+            --btn-shadow: 0 0 25px rgba(255, 0, 127, 0.6);
+        }
+
+        [data-theme="light-minimal"] {
+            /* Theme 4: Premium Light */
+            --bg-base: #f1f5f9;
             --bg-surface: rgba(255, 255, 255, 0.85);
             --bg-card: rgba(255, 255, 255, 0.65);
-            --border-glow: rgba(99, 102, 241, 0.2);
             --border-card: rgba(0, 0, 0, 0.08);
-            
-            --text-main: #1f2937;
-            --text-muted: #6b7280;
-            --text-glow: #4f46e5;
-
-            --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.08);
-            --shadow-neon: 0 4px 20px rgba(99, 102, 241, 0.25);
+            --border-focus: rgba(79, 70, 229, 0.4);
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --accent-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #d946ef 100%);
+            --accent-glow: rgba(79, 70, 229, 0.25);
+            --btn-shadow: 0 8px 20px rgba(79, 70, 229, 0.3);
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+            transition: background 0.4s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.4s ease;
         }
 
         body {
@@ -83,108 +105,135 @@ HTML_TEMPLATE = """
             background-color: var(--bg-base);
             color: var(--text-main);
             min-height: 100vh;
+            padding: 2rem 1rem;
+            position: relative;
             overflow-x: hidden;
-            background-image: 
-                radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(236, 72, 153, 0.12) 0%, transparent 40%);
+        }
+
+        /* Ambient Glow Backgrounds */
+        .ambient-glow-1, .ambient-glow-2 {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            background: var(--accent-gradient);
+            filter: blur(140px);
+            opacity: 0.25;
+            z-index: -1;
+            animation: pulse-glow 8s ease-in-out infinite alternate;
+        }
+        .ambient-glow-1 { top: -100px; left: -100px; }
+        .ambient-glow-2 { bottom: -100px; right: -100px; }
+
+        @keyframes pulse-glow {
+            0% { transform: scale(1) translate(0, 0); opacity: 0.2; }
+            100% { transform: scale(1.2) translate(30px, 30px); opacity: 0.35; }
         }
 
         .container {
-            max-width: 1280px;
+            max-width: 1240px;
             margin: 0 auto;
-            padding: 2rem;
         }
 
-        /* Navbar */
+        /* Glassmorphism Header */
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 1.25rem 2rem;
             background: var(--bg-surface);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
             border: 1px solid var(--border-card);
-            box-shadow: var(--shadow-glass);
-            margin-bottom: 2.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 2rem;
         }
 
-        .logo-area {
+        .brand-box {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: 1rem;
         }
 
-        .logo-icon {
-            width: 42px;
-            height: 42px;
-            border-radius: 12px;
+        .brand-icon {
+            width: 46px;
+            height: 46px;
+            border-radius: 14px;
             background: var(--accent-gradient);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: 1.2rem;
-            box-shadow: var(--shadow-neon);
+            color: #fff;
+            font-size: 1.3rem;
+            box-shadow: var(--btn-shadow);
         }
 
-        .logo-text h1 {
-            font-size: 1.35rem;
+        .brand-title h1 {
+            font-size: 1.4rem;
             font-weight: 800;
-            letter-spacing: -0.5px;
             background: var(--accent-gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
         }
 
-        .logo-text p {
-            font-size: 0.75rem;
+        .brand-title p {
+            font-size: 0.78rem;
             color: var(--text-muted);
         }
 
-        .theme-toggle-btn {
+        /* Controls Area & Theme Selector */
+        .controls-area {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .theme-select-wrapper {
+            position: relative;
+        }
+
+        .theme-select {
             background: var(--bg-card);
             border: 1px solid var(--border-card);
             color: var(--text-main);
-            padding: 0.6rem 1.2rem;
+            padding: 0.65rem 1.2rem;
             border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 600;
             cursor: pointer;
+            outline: none;
             display: flex;
             align-items: center;
-            gap: 0.6rem;
-            font-weight: 600;
-            font-size: 0.85rem;
+            gap: 0.5rem;
         }
 
-        .theme-toggle-btn:hover {
-            border-color: var(--accent-primary);
-            box-shadow: var(--shadow-neon);
-            transform: translateY(-2px);
+        .theme-select:hover {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 15px var(--accent-glow);
         }
 
-        /* Grid Layout */
+        /* Dashboard Main Layout */
         .dashboard-grid {
             display: grid;
-            grid-template-columns: 1fr 420px;
+            grid-template-columns: 1fr 400px;
             gap: 2rem;
         }
 
         @media (max-width: 1024px) {
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-            }
+            .dashboard-grid { grid-template-columns: 1fr; }
         }
 
-        /* Glass Card Base */
+        /* Glass Cards */
         .glass-card {
             background: var(--bg-surface);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border-radius: 24px;
             border: 1px solid var(--border-card);
             padding: 2rem;
-            box-shadow: var(--shadow-glass);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.25);
             position: relative;
             overflow: hidden;
         }
@@ -192,12 +241,9 @@ HTML_TEMPLATE = """
         .glass-card::before {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
+            top: 0; left: 0; right: 0;
             height: 2px;
             background: var(--accent-gradient);
-            opacity: 0.7;
         }
 
         .card-header {
@@ -216,10 +262,10 @@ HTML_TEMPLATE = """
         }
 
         .card-title i {
-            color: var(--accent-primary);
+            color: var(--text-muted);
         }
 
-        /* Form Controls */
+        /* Inputs Grid */
         .form-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -227,9 +273,7 @@ HTML_TEMPLATE = """
         }
 
         @media (max-width: 640px) {
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
+            .form-grid { grid-template-columns: 1fr; }
         }
 
         .input-group {
@@ -239,11 +283,11 @@ HTML_TEMPLATE = """
         }
 
         .input-group label {
-            font-size: 0.8rem;
-            font-weight: 600;
+            font-size: 0.78rem;
+            font-weight: 700;
             color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.6px;
         }
 
         .input-wrapper {
@@ -272,8 +316,8 @@ HTML_TEMPLATE = """
         }
 
         .form-control:focus {
-            border-color: var(--accent-primary);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+            border-color: var(--border-focus);
+            box-shadow: 0 0 15px var(--accent-glow);
         }
 
         select.form-control {
@@ -281,45 +325,48 @@ HTML_TEMPLATE = """
             cursor: pointer;
         }
 
-        /* Animated Premium Button */
-        .btn-submit {
+        /* Premium Interactive Button with Animated Glow & Ripple */
+        .btn-wrapper {
             grid-column: span 2;
             margin-top: 1rem;
-            padding: 1rem 2rem;
+        }
+
+        @media (max-width: 640px) {
+            .btn-wrapper { grid-column: span 1; }
+        }
+
+        .btn-premium {
+            width: 100%;
+            padding: 1.1rem 2rem;
             background: var(--accent-gradient);
             border: none;
-            border-radius: 14px;
+            border-radius: 16px;
             color: white;
             font-size: 1rem;
-            font-weight: 700;
+            font-weight: 800;
+            letter-spacing: 0.5px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 0.75rem;
-            box-shadow: var(--shadow-neon);
+            box-shadow: var(--btn-shadow);
             position: relative;
             overflow: hidden;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        @media (max-width: 640px) {
-            .btn-submit {
-                grid-column: span 1;
-            }
+        .btn-premium:hover {
+            transform: translateY(-3px) scale(1.01);
+            box-shadow: 0 0 35px var(--accent-glow);
         }
 
-        .btn-submit:hover {
-            background: var(--accent-hover);
-            transform: translateY(-2px);
-            box-shadow: 0 0 30px rgba(99, 102, 241, 0.6);
+        .btn-premium:active {
+            transform: translateY(1px) scale(0.99);
         }
 
-        .btn-submit:active {
-            transform: translateY(0);
-        }
-
-        .btn-submit::after {
+        /* Premium Shine Effect */
+        .btn-premium::before {
             content: '';
             position: absolute;
             top: -50%;
@@ -329,113 +376,116 @@ HTML_TEMPLATE = """
             background: linear-gradient(
                 60deg,
                 transparent,
-                rgba(255, 255, 255, 0.25),
+                rgba(255, 255, 255, 0.35),
                 transparent
             );
             transform: rotate(30deg);
-            animation: shine 4s infinite;
+            animation: shine-sweep 3.5s infinite;
         }
 
-        @keyframes shine {
+        @keyframes shine-sweep {
             0% { transform: translateX(-100%) rotate(30deg); }
             20% { transform: translateX(100%) rotate(30deg); }
             100% { transform: translateX(100%) rotate(30deg); }
         }
 
-        /* Right Panel / Output Area */
-        .results-panel {
+        /* Analytics Side Panel */
+        .analytics-panel {
             display: flex;
             flex-direction: column;
             gap: 1.5rem;
         }
 
-        .result-box {
+        .result-card-inner {
             background: var(--bg-card);
-            border-radius: 18px;
-            padding: 1.75rem;
+            border-radius: 20px;
+            padding: 2rem 1.5rem;
             border: 1px solid var(--border-card);
             text-align: center;
             position: relative;
         }
 
-        .result-badge {
+        .result-tag {
             display: inline-block;
-            padding: 0.35rem 1rem;
-            border-radius: 20px;
+            padding: 0.4rem 1.1rem;
+            border-radius: 30px;
             font-size: 0.75rem;
-            font-weight: 700;
+            font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin-bottom: 1rem;
-            background: rgba(99, 102, 241, 0.15);
-            color: var(--text-glow);
-            border: 1px solid var(--border-glow);
+            margin-bottom: 1.2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-card);
+            color: var(--text-muted);
         }
 
-        .result-value {
+        .result-status {
             font-size: 2.2rem;
             font-weight: 800;
             margin-bottom: 0.5rem;
         }
 
+        .status-churn {
+            color: #ef4444;
+            text-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+        }
+
+        .status-retained {
+            color: #10b981;
+            text-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+        }
+
         .result-subtext {
             font-size: 0.85rem;
             color: var(--text-muted);
+            margin-top: 0.5rem;
         }
 
-        /* Pulse Animations for Predictions */
-        .status-positive {
-            color: #10b981;
-        }
-        .status-negative {
-            color: #f43f5e;
-        }
-
-        /* Feature Weight Mini Dashboard */
-        .metrics-list {
+        /* Feature Weight Bar Visualizer */
+        .feature-bars {
             display: flex;
             flex-direction: column;
-            gap: 1rem;
-            margin-top: 1rem;
+            gap: 1.2rem;
+            margin-top: 1.5rem;
         }
 
-        .metric-item {
+        .bar-item {
             display: flex;
             flex-direction: column;
-            gap: 0.3rem;
+            gap: 0.4rem;
         }
 
-        .metric-label {
+        .bar-label {
             display: flex;
             justify-content: space-between;
             font-size: 0.8rem;
             font-weight: 600;
         }
 
-        .metric-bar-bg {
+        .bar-track {
             height: 8px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
             overflow: hidden;
         }
 
-        .metric-bar-fill {
+        .bar-fill {
             height: 100%;
             background: var(--accent-gradient);
-            border-radius: 4px;
+            border-radius: 10px;
             width: 0%;
-            transition: width 1s ease-in-out;
+            transition: width 1s ease-out;
         }
 
-        /* Loader */
+        /* Spinner Animation */
         .spinner {
             display: none;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255,255,255,.3);
+            width: 22px;
+            height: 22px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             border-top-color: #fff;
-            animation: spin 0.8s ease-in-out infinite;
+            animation: spin 0.8s linear infinite;
         }
 
         @keyframes spin {
@@ -445,45 +495,53 @@ HTML_TEMPLATE = """
 </head>
 <body>
 
+    <div class="ambient-glow-1"></div>
+    <div class="ambient-glow-2"></div>
+
     <div class="container">
         <!-- Header -->
         <header>
-            <div class="logo-area">
-                <div class="logo-icon">
-                    <i class="fa-solid fa-bolt"></i>
+            <div class="brand-box">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-brain"></i>
                 </div>
-                <div class="logo-text">
-                    <h1>AdaBoost Intelligence</h1>
-                    <p>Ensemble Model Prediction Dashboard</p>
+                <div class="brand-title">
+                    <h1>AI Churn Prediction Studio</h1>
+                    <p>Enterprise Machine Learning Analytics</p>
                 </div>
             </div>
 
-            <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()">
-                <i class="fa-solid fa-moon"></i>
-                <span id="themeText">Dark Mode</span>
-            </button>
+            <div class="controls-area">
+                <i class="fa-solid fa-palette" style="color: var(--text-muted);"></i>
+                <select class="theme-select" id="themeSelector" onchange="changeTheme(this.value)">
+                    <option value="dark-glass">Dark Glass</option>
+                    <option value="emerald">Emerald Luxury</option>
+                    <option value="cyberpunk">Cyberpunk Neon</option>
+                    <option value="light-minimal">Light Minimal</option>
+                </select>
+            </div>
         </header>
 
-        <!-- Main Body Grid -->
+        <!-- Dashboard Grid -->
         <div class="dashboard-grid">
             
-            <!-- Left Panel: Input Controls -->
+            <!-- Left: Inputs -->
             <div class="glass-card">
                 <div class="card-header">
                     <div class="card-title">
                         <i class="fa-solid fa-sliders"></i>
-                        <span>Model Parameters</span>
+                        <span>Customer Profile Attributes</span>
                     </div>
                 </div>
 
-                <form id="predictionForm">
+                <form id="churnForm">
                     <div class="form-grid">
                         
                         <div class="input-group">
                             <label>Age</label>
                             <div class="input-wrapper">
                                 <i class="fa-solid fa-user"></i>
-                                <input type="number" class="form-control" name="Age" value="30" required>
+                                <input type="number" class="form-control" name="Age" value="34" required>
                             </div>
                         </div>
 
@@ -502,7 +560,7 @@ HTML_TEMPLATE = """
                             <label>Tenure (Months)</label>
                             <div class="input-wrapper">
                                 <i class="fa-solid fa-calendar-days"></i>
-                                <input type="number" class="form-control" name="Tenure" value="12" required>
+                                <input type="number" class="form-control" name="Tenure" value="18" required>
                             </div>
                         </div>
 
@@ -510,7 +568,7 @@ HTML_TEMPLATE = """
                             <label>Usage Frequency</label>
                             <div class="input-wrapper">
                                 <i class="fa-solid fa-chart-line"></i>
-                                <input type="number" class="form-control" name="Usage Frequency" value="15" required>
+                                <input type="number" class="form-control" name="Usage Frequency" value="12" required>
                             </div>
                         </div>
 
@@ -518,7 +576,7 @@ HTML_TEMPLATE = """
                             <label>Support Calls</label>
                             <div class="input-wrapper">
                                 <i class="fa-solid fa-headset"></i>
-                                <input type="number" class="form-control" name="Support Calls" value="2" required>
+                                <input type="number" class="form-control" name="Support Calls" value="1" required>
                             </div>
                         </div>
 
@@ -526,7 +584,7 @@ HTML_TEMPLATE = """
                             <label>Payment Delay (Days)</label>
                             <div class="input-wrapper">
                                 <i class="fa-solid fa-clock-history"></i>
-                                <input type="number" class="form-control" name="Payment Delay" value="1" required>
+                                <input type="number" class="form-control" name="Payment Delay" value="0" required>
                             </div>
                         </div>
 
@@ -558,7 +616,7 @@ HTML_TEMPLATE = """
                             <label>Total Spend ($)</label>
                             <div class="input-wrapper">
                                 <i class="fa-solid fa-dollar-sign"></i>
-                                <input type="number" step="0.01" class="form-control" name="Total Spend" value="500.00" required>
+                                <input type="number" step="0.01" class="form-control" name="Total Spend" value="750.00" required>
                             </div>
                         </div>
 
@@ -566,91 +624,78 @@ HTML_TEMPLATE = """
                             <label>Last Interaction (Days)</label>
                             <div class="input-wrapper">
                                 <i class="fa-solid fa-hand-pointer"></i>
-                                <input type="number" class="form-control" name="Last Interaction" value="5" required>
+                                <input type="number" class="form-control" name="Last Interaction" value="3" required>
                             </div>
                         </div>
 
-                        <button type="submit" class="btn-submit" id="submitBtn">
-                            <span id="btnText">Execute Prediction</span>
-                            <div class="spinner" id="btnSpinner"></div>
-                            <i class="fa-solid fa-wand-magic-sparkles"></i>
-                        </button>
+                        <div class="btn-wrapper">
+                            <button type="submit" class="btn-premium" id="submitBtn">
+                                <span id="btnText">Analyze Churn Risk</span>
+                                <div class="spinner" id="btnSpinner"></div>
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            </button>
+                        </div>
 
                     </div>
                 </form>
             </div>
 
-            <!-- Right Panel: Results & Analytics -->
-            <div class="results-panel">
-                
+            <!-- Right: Results & Dashboard -->
+            <div class="analytics-panel">
                 <div class="glass-card">
                     <div class="card-header">
                         <div class="card-title">
-                            <i class="fa-solid fa-square-poll-vertical"></i>
-                            <span>Prediction Insights</span>
+                            <i class="fa-solid fa-chart-pie"></i>
+                            <span>Prediction Output</span>
                         </div>
                     </div>
 
-                    <div class="result-box">
-                        <span class="result-badge" id="statusBadge">Awaiting Input</span>
-                        <div class="result-value" id="resultDisplay">--</div>
-                        <p class="result-subtext" id="confidenceDisplay">Fill out model parameters and run inference.</p>
+                    <div class="result-card-inner">
+                        <span class="result-tag" id="resultTag">System Ready</span>
+                        <div class="result-status" id="resultDisplay">--</div>
+                        <p class="result-subtext" id="subtextDisplay">Run an analysis to generate customer retention insights.</p>
                     </div>
 
-                    <div class="metrics-list" id="metricsContainer">
-                        <div class="metric-item">
-                            <div class="metric-label">
-                                <span>Total Spend Contribution</span>
-                                <span id="spendVal">50%</span>
+                    <div class="feature-bars">
+                        <div class="bar-item">
+                            <div class="bar-label">
+                                <span>Total Spend Factor</span>
+                                <span id="spendVal">0%</span>
                             </div>
-                            <div class="metric-bar-bg">
-                                <div class="metric-bar-fill" id="spendBar" style="width: 50%;"></div>
+                            <div class="bar-track">
+                                <div class="bar-fill" id="spendBar"></div>
                             </div>
                         </div>
 
-                        <div class="metric-item">
-                            <div class="metric-label">
-                                <span>Support Call Friction</span>
-                                <span id="callsVal">20%</span>
+                        <div class="bar-item">
+                            <div class="bar-label">
+                                <span>Support Friction Score</span>
+                                <span id="callsVal">0%</span>
                             </div>
-                            <div class="metric-bar-bg">
-                                <div class="metric-bar-fill" id="callsBar" style="width: 20%;"></div>
+                            <div class="bar-track">
+                                <div class="bar-fill" id="callsBar"></div>
                             </div>
                         </div>
                     </div>
                 </div>
-
             </div>
 
         </div>
     </div>
 
     <script>
-        // Theme Switcher Logic
-        function toggleTheme() {
-            const html = document.documentElement;
-            const themeBtn = document.getElementById('themeToggleBtn');
-            const themeText = document.getElementById('themeText');
-            
-            if (html.getAttribute('data-theme') === 'dark') {
-                html.setAttribute('data-theme', 'light');
-                themeBtn.innerHTML = '<i class="fa-solid fa-sun"></i> <span>Light Mode</span>';
-            } else {
-                html.setAttribute('data-theme', 'dark');
-                themeBtn.innerHTML = '<i class="fa-solid fa-moon"></i> <span>Dark Mode</span>';
-            }
+        function changeTheme(themeName) {
+            document.documentElement.setAttribute('data-theme', themeName);
         }
 
-        // Form Submit API Request
-        document.getElementById('predictionForm').addEventListener('submit', async (e) => {
+        document.getElementById('churnForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const submitBtn = document.getElementById('submitBtn');
             const btnText = document.getElementById('btnText');
             const spinner = document.getElementById('btnSpinner');
 
-            // Set Loading UI state
-            btnText.innerText = "Analyzing...";
+            btnText.innerText = "Processing...";
             spinner.style.display = "block";
             submitBtn.style.pointerEvents = "none";
 
@@ -668,45 +713,42 @@ HTML_TEMPLATE = """
 
                 if (response.ok) {
                     const display = document.getElementById('resultDisplay');
-                    const badge = document.getElementById('statusBadge');
-                    const confidence = document.getElementById('confidenceDisplay');
+                    const tag = document.getElementById('resultTag');
+                    const subtext = document.getElementById('subtextDisplay');
 
-                    badge.innerText = "Inference Complete";
-                    
+                    tag.innerText = "Analysis Complete";
+
                     if (result.prediction === 1) {
-                        display.innerText = "Class 1 Detected";
-                        display.className = "result-value status-positive";
+                        display.innerText = "High Risk";
+                        display.className = "result-status status-churn";
                     } else {
-                        display.innerText = "Class 0 Detected";
-                        display.className = "result-value status-negative";
+                        display.innerText = "Low Risk";
+                        display.className = "result-status status-retained";
                     }
 
                     if (result.probability !== null) {
-                        confidence.innerText = `Confidence Score: ${(result.probability * 100).toFixed(1)}%`;
-                    } else {
-                        confidence.innerText = "Prediction calculated successfully.";
+                        subtext.innerText = `Prediction Confidence: ${(result.probability * 100).toFixed(1)}%`;
                     }
 
-                    // Dynamically animate analytics metrics based on input
                     const spend = parseFloat(data["Total Spend"]) || 0;
                     const calls = parseFloat(data["Support Calls"]) || 0;
-                    
-                    const spendPct = Math.min(100, Math.max(10, (spend / 1000) * 100));
-                    const callsPct = Math.min(100, Math.max(10, (calls / 10) * 100));
+
+                    const spendPct = Math.min(100, Math.max(5, (spend / 1000) * 100));
+                    const callsPct = Math.min(100, Math.max(5, (calls / 10) * 100));
 
                     document.getElementById('spendBar').style.width = spendPct + "%";
                     document.getElementById('spendVal').innerText = Math.round(spendPct) + "%";
-                    
+
                     document.getElementById('callsBar').style.width = callsPct + "%";
                     document.getElementById('callsVal').innerText = Math.round(callsPct) + "%";
 
                 } else {
-                    alert("Prediction Error: " + result.error);
+                    alert("Error: " + result.error);
                 }
             } catch (err) {
-                alert("Server Connection Failed.");
+                alert("Server error occurred.");
             } finally {
-                btnText.innerText = "Execute Prediction";
+                btnText.innerText = "Analyze Churn Risk";
                 spinner.style.display = "none";
                 submitBtn.style.pointerEvents = "auto";
             }
@@ -723,17 +765,17 @@ def index():
 @app.route("/predict", methods=["POST"])
 def predict():
     if model is None:
-        return jsonify({"error": "Model file not found or failed to load."}), 500
+        return jsonify({"error": "Model missing or failed to load."}), 500
 
     try:
         data = request.get_json()
 
-        # Parse categorical features back to model numerical values
+        # Map categorical text inputs to original model numbers
         gender_num = CATEGORICAL_MAPPINGS["Gender"].get(data.get("Gender"), 0)
         sub_num = CATEGORICAL_MAPPINGS["Subscription Type"].get(data.get("Subscription Type"), 0)
         contract_num = CATEGORICAL_MAPPINGS["Contract Length"].get(data.get("Contract Length"), 0)
 
-        # Assemble features array in exact model order
+        # Assemble features array in exact sequence expected by model
         features = np.array([[
             float(data.get("Age", 0)),
             gender_num,
@@ -748,7 +790,7 @@ def predict():
         ]])
 
         prediction = model.predict(features)[0]
-        
+
         probability = None
         if hasattr(model, "predict_proba"):
             probability = float(np.max(model.predict_proba(features)))
